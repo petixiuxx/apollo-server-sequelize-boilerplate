@@ -7,20 +7,23 @@ import {
 import cors from 'cors';
 import 'dotenv/config';
 
-import schema from './schema';
-import resolvers from './resolvers';
+import { resolvers, typeDefs } from './setup/schema';
+
 import models, {
   sequelize
 } from './models';
 
-const getMe = async req => {
-  const token = req.headers['x-token'];
+const getMe = async (req) => {
+  const token = req.headers.authentication;
+  console.log('token', token)
 
   if (token) {
     try {
       return await jwt.verify(token , process.env.SECRET);
     } catch (e) {
-      throw new AuthenticationError('Your session expired. Sign in again');
+      console.log("Error Your session expired. Sign in again")
+      // throw new AuthenticationError('Your session expired. Sign in again');
+      return null;
     }
   }
 }
@@ -60,7 +63,7 @@ app.use(cors());
 
 
 const server = new ApolloServer({
-  typeDefs: schema,
+  typeDefs,
   resolvers,
   formatError: error => {
     const message = error.message
@@ -86,7 +89,7 @@ server.applyMiddleware({
   app,
   path: '/graphql'
 });
-const eraseDatabaseOnSync = true;
+const eraseDatabaseOnSync = false;
 sequelize.sync({
   force: eraseDatabaseOnSync
 }).then(async () => {

@@ -30,6 +30,9 @@ const user = (sequelize, DataTypes) => {
         role: {
             type: DataTypes.STRING,
         },
+        token: {
+            type: DataTypes.STRING,
+        },
     });
 
     User.associate = models => {
