@@ -1,11 +1,17 @@
+import jwt from 'jsonwebtoken';
 import {
     AuthenticationError,
     UserInputError
 } from 'apollo-server';
+import 'dotenv/config';
+
 import {
     combineResolvers
 } from 'graphql-resolvers';
-import { createToken, isAdmin } from '../../utils';
+import {
+    createToken,
+    isAdmin
+} from '../../utils';
 export const Query = {
     users: async (parent, args, {
         models
@@ -35,23 +41,28 @@ export const Mutation = {
         models,
         secret
     }) => {
-        const user = await models.User.create({
+        const user = await models.User.findByLogin(email);
+        if (user) {
+            throw new Error("User with this email already existed");
+        }
+
+        const newUser = await models.User.create({
             username,
             email,
             password,
             role
         });
-        createToken(user, secret, '30m')
-        .then(token =>  {
-            user.token = token
-            user.save((err) => {
-                if (err) {
-                    console.log("Error: " + err.message);
-                }
+        createToken(newUser, secret, '30m')
+            .then(token => {
+                newUser.token = token
+                newUser.save((err) => {
+                    if (err) {
+                        console.log("Error: " + err.message);
+                    }
+                })
             })
-        })
-        
-        return user;
+
+        return newUser;
     },
     signIn: async (parent, {
         login,
@@ -75,15 +86,19 @@ export const Mutation = {
                 'Invalid password'
             );
         }
-        createToken(user, secret, '30m')
-        .then(token =>  {
-            user.token = token
-            user.save((err) => {
-                if (err) {
-                    throw new Error("Error: " + err.message);
-                }
-            })
-        })
+        const verifiedUser = jwt.verify(user.token, process.env.SECRET);
+        if (!verifiedUser) {
+            createToken(user, secret, '30m')
+                .then(token => {
+                    user.token = token
+                    user.save((err) => {
+                        if (err) {
+                            throw new Error("Error: " + err.message);
+                        }
+                    })
+                })
+        }
+
         return user;
     },
     deleteUser: combineResolvers(

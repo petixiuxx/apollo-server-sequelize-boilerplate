@@ -14,8 +14,8 @@ import models, {
 } from './models';
 
 const getMe = async (req) => {
-  const token = req.headers.authentication;
-  console.log('token', token)
+  const token = req.headers.authentication ? req.headers.authentication.split(" ")[1] : null;
+  console.log('token', token);
 
   if (token) {
     try {
@@ -26,6 +26,7 @@ const getMe = async (req) => {
       return null;
     }
   }
+  return null;
 }
 
 const createUsersWithMessage = async date => {
